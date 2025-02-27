@@ -10,14 +10,21 @@ pipeline {
             steps {
                 echo 'Installing Node.js dependencies...'
                 sh 'npm install'
-                sh 'npm install -g mocha'
+                sh 'npm install --save-dev mocha'
             }
         }
 
         stage('Run Tests') {
             steps {
                 echo 'Running unit tests...'
-                sh 'npm test'
+                sh '''
+                if [ -f ./node_modules/.bin/mocha ]; then
+                    npx mocha
+                else
+                    echo "⚠️ Mocha n'est pas installé. Vérifiez l'installation des dépendances."
+                    exit 1
+                fi
+                '''
             }
         }
 
@@ -39,11 +46,26 @@ pipeline {
     post {
         success {
             echo 'Pipeline executed successfully!'
-            slackSend (channel: '#ci-cd', message: "✅ Pipeline réussi : ${env.JOB_NAME} #${env.BUILD_NUMBER}")
+
+            script {
+                try {
+                    slackSend (channel: '#ci-cd', message: "✅ Pipeline réussi : ${env.JOB_NAME} #${env.BUILD_NUMBER}")
+                } catch (Exception e) {
+                    echo "⚠️ Slack notification failed. Vérifiez que le plugin Slack est bien installé."
+                }
+            }
         }
+
         failure {
             echo 'Pipeline execution failed!'
-            slackSend (channel: '#ci-cd', message: "❌ Échec du pipeline : ${env.JOB_NAME} #${env.BUILD_NUMBER}")
+
+            script {
+                try {
+                    slackSend (channel: '#ci-cd', message: "❌ Échec du pipeline : ${env.JOB_NAME} #${env.BUILD_NUMBER}")
+                } catch (Exception e) {
+                    echo "⚠️ Slack notification failed. Vérifiez que le plugin Slack est bien installé."
+                }
+            }
         }
     }
 }
