@@ -10,6 +10,7 @@ pipeline {
             steps {
                 echo 'Installing Node.js dependencies...'
                 sh 'npm install'
+                sh 'npm install -g mocha'
             }
         }
 
